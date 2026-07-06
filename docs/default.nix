@@ -69,6 +69,8 @@ let
 
   hmPath = toString ./..;
 
+  nixpkgsPath = toString pkgs.path;
+
   # Keep submodule option docs visible when wrapped in `either` (and therefore
   # in `nullOr (either ...)`), which upstream currently omits.
   docsLib = lib.extend (
@@ -177,6 +179,15 @@ let
               if lib.hasPrefix hmPath (toString decl) then
                 gitHubDeclaration "nix-community" "home-manager" (
                   lib.removePrefix "/" (lib.removePrefix hmPath (toString decl))
+                )
+              else if lib.hasPrefix nixpkgsPath (toString decl) then
+                # Modules imported from nixpkgs (e.g. misc/meta.nix and, through
+                # it, modules/generic/meta-maintainers.nix) declare options at
+                # positions inside the nixpkgs source tree. Left as-is these
+                # embed a context-free store path into the options.json
+                # derivation, which Nix warns about.
+                gitHubDeclaration "NixOS" "nixpkgs" (
+                  lib.removePrefix "/" (lib.removePrefix nixpkgsPath (toString decl))
                 )
               else if decl == "lib/modules.nix" then
                 # TODO: handle this in a better way (may require upstream
